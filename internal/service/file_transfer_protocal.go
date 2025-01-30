@@ -11,6 +11,7 @@ import (
 
 func ListValidFiles(client *ftp.ServerConn, remotePath string) ([]string, error) {
 	entries, err := client.List(remotePath)
+
 	if err != nil {
 		return nil, fmt.Errorf("ftp list failed: %w", err)
 	}
