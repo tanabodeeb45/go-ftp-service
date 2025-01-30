@@ -18,11 +18,12 @@ func ListValidFiles(client *ftp.ServerConn, remotePath string) ([]string, error)
 
 	var validFiles []string
 	for _, entry := range entries {
-		if isValid, err := validateFileName(entry.Name); isValid {
-			validFiles = append(validFiles, entry.Name)
-		} else {
+		isValid, err := validateFileName(entry.Name)
+		if !isValid {
 			fmt.Printf("Skipping invalid file: %s. Reason: %v\n", entry.Name, err)
+			continue
 		}
+		validFiles = append(validFiles, entry.Name)
 	}
 
 	if len(validFiles) == 0 {

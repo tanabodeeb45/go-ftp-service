@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"ftp-docker-local/internal/storage"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
-
-	"ftp-docker-local/internal/service"
-	"ftp-docker-local/internal/storage"
 
 	"github.com/jlaffaye/ftp"
 	"github.com/joho/godotenv"
@@ -19,6 +18,8 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Note: No .env file found, using system environment variables")
 	}
+
+	filename := templateFile()
 
 	host := os.Getenv("HOST")
 	user := os.Getenv("USERNAME")
@@ -35,35 +36,32 @@ func main() {
 		log.Fatalf("FTP login failed: %v", err)
 	}
 
-	entries, err := service.ListValidFiles(client, dir)
+	filePath := filepath.Join(dir, filename)
+
+	entry, err := client.Retr(filePath)
+
 	if err != nil {
-		log.Fatalf("File listing error: %v", err)
+		log.Fatalf("Failed to download %s: %v", filename, err)
+	}
+	defer entry.Close()
+
+	content, err := io.ReadAll(entry)
+	if err != nil {
+		log.Fatalf("Failed to read %s: %v", filename, err)
 	}
 
-	if len(entries) == 0 {
-		log.Fatal("No files found in the directory")
-	}
-
-	entry := entries[0]
-
-	//Download the file from the FTP server
-	remotePath := filepath.Join(dir, entry)
-	resp, err := client.Retr(remotePath)
+	url, err := storage.UploadCSV(bytes.NewBuffer(content), filename)
 	if err != nil {
-		log.Fatalf("Failed to download %s: %v", remotePath, err)
-	}
-	defer resp.Close()
-
-	//Read the file content into a byte slice
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		log.Fatalf("Failed to read %s: %v", remotePath, err)
-	}
-
-	url, err := storage.UploadCSV(bytes.NewBuffer(content), entry)
-	if err != nil {
-		log.Fatalf("Failed to upload %s to GCS: %v", entry, err)
+		log.Fatalf("Failed to upload %s to GCS: %v", filename, err)
 	}
 
 	log.Printf("File uploaded to GCS: %s", url)
+}
+
+func templateFile() string {
+	baseFilename := os.Getenv("FILENAME")
+	mId := os.Getenv("MERCHANT_ID")
+	date := time.Now().Format("20060102")
+
+	return fmt.Sprintf("%s_%s_%s.csv", baseFilename, mId, date)
 }
