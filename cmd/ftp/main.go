@@ -26,6 +26,10 @@ func main() {
 	pass := os.Getenv("PASSWORD")
 	dir := os.Getenv("DIRECTORY")
 
+	// tls := &tls.Config{
+	// 	InsecureSkipVerify: true,
+	// }
+
 	client, err := ftp.Dial(host, ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
 		log.Fatalf("FTP connection failed: %v", err)

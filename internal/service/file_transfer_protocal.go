@@ -37,11 +37,11 @@ func ListValidFiles(client *ftp.ServerConn, remotePath string) ([]string, error)
 
 func validateFileName(name string) (bool, error) {
 	//expected format: FundTransferMerchantReconcile_20250130.csv
-	const expectedParts = 3
-	const expectedPrefix = "FundTransferMerchantReconcile"
-	const expectedSuffix = ".csv"
-	const datePartLength = 8
-	const fullDateLength = 12
+	expectedParts := 3
+	expectedPrefix := "FundTransferMerchantReconcile"
+	expectedSuffix := ".csv"
+	datePartLength := 8
+	fullDateLength := 12
 
 	parts := strings.Split(name, "_")
 	now := time.Now().Format("20060102")
