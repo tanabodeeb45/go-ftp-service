@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -73,4 +74,17 @@ func validateFileName(name string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func DelFile(client *ftp.ServerConn, filePath string, retries int) error {
+	var err error
+	for i := 0; i < retries; i++ {
+		err = client.Delete(filePath)
+		if err == nil {
+			return nil
+		}
+		log.Printf("Attempt %d to delete file failed: %v", i+1, err)
+		time.Sleep(time.Second * 2)
+	}
+	return err
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -39,9 +38,12 @@ func UploadCSV(fileContent *bytes.Buffer, filename string) (string, error) {
 	}
 	defer client.Close()
 
-	objectPath := filepath.Join("reconcile", filename)
+	year := time.Now().Year()
+	month := time.Now().Month()
 
-	writer := client.Bucket(bucket).Object(objectPath).NewWriter(ctx)
+	objPath := fmt.Sprintf("reconcile/%d/%d/%s", year, month, filename)
+
+	writer := client.Bucket(bucket).Object(objPath).NewWriter(ctx)
 	writer.ContentType = "text/csv"
 
 	if _, err := io.Copy(writer, fileContent); err != nil {
@@ -52,7 +54,7 @@ func UploadCSV(fileContent *bytes.Buffer, filename string) (string, error) {
 		return "", fmt.Errorf("error finalizing GCS upload: %w", err)
 	}
 
-	url, err := client.Bucket(bucket).SignedURL(objectPath, &storage.SignedURLOptions{
+	url, err := client.Bucket(bucket).SignedURL(objPath, &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
 		Expires: time.Now().Add(15 * time.Minute),

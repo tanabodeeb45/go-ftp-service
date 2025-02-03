@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"ftp-docker-local/internal/service"
 	"ftp-docker-local/internal/storage"
 	"io"
 	"log"
@@ -42,8 +43,8 @@ func main() {
 
 	filePath := filepath.Join(dir, filename)
 
+	// Download the file from FTP
 	entry, err := client.Retr(filePath)
-
 	if err != nil {
 		log.Fatalf("Failed to download %s: %v", filename, err)
 	}
@@ -54,12 +55,18 @@ func main() {
 		log.Fatalf("Failed to read %s: %v", filename, err)
 	}
 
+	// Attempt to delete the file from FTP
+	if err := service.DelFile(client, filePath, 3); err != nil {
+		log.Fatalf("Failed to delete %s from FTP: %v", filename, err)
+	}
+
+	// Upload the file to GCS
 	url, err := storage.UploadCSV(bytes.NewBuffer(content), filename)
 	if err != nil {
 		log.Fatalf("Failed to upload %s to GCS: %v", filename, err)
 	}
 
-	log.Printf("File uploaded to GCS: %s", url)
+	log.Printf("File uploaded to GCS and deleted from FTP: %s", url)
 }
 
 func templateFile() string {
